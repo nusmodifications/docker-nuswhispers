@@ -1,0 +1,86 @@
+# Adapted from https://github.com/LaraDock/laradock/blob/master/workspace/Dockerfile.
+FROM phusion/baseimage:latest
+
+RUN DEBIAN_FRONTEND=noninteractive
+RUN locale-gen en_US.UTF-8
+
+ENV LANGUAGE=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV LC_CTYPE=UTF-8
+ENV LANG=en_US.UTF-8
+ENV TERM xterm
+
+# Install "software-properties-common" (for the "add-apt-repository").
+RUN apt-get update && apt-get install -y \
+    software-properties-common
+
+# Add PHP7 ppa.
+RUN add-apt-repository -y \
+    ppa:ondrej/php
+
+# Install PHP-CLI, some PHP extensions and some useful tools with apt-get.
+RUN apt-get update && apt-get install -y \
+    php7.0-cli \
+    php7.0-common \
+    php7.0-curl \
+    php7.0-json \
+    php7.0-xml \
+    php7.0-mbstring \
+    php7.0-mcrypt \
+    php7.0-mysql \
+    php7.0-zip \
+    php7.0-gd \
+    php7.0-xdebug \
+    php7.0-intl \
+    php-dev \
+    ruby \
+    ruby-dev \
+    libcurl4-openssl-dev \
+    libedit-dev \
+    libssl-dev \
+    libxml2-dev \
+    git \
+    curl \
+    vim
+
+# Install Compass GEM for SASS compilation.
+RUN gem install compass
+
+# Clean up, to free some space
+RUN apt-get clean
+
+# Remove load xdebug extension (only load on phpunit command)
+RUN sed -i 's/^/;/g' /etc/php/7.0/cli/conf.d/20-xdebug.ini
+
+# Add bin folder of composer to PATH.
+RUN echo "export PATH=${PATH}:/var/www/nuswhispers/vendor/bin" >> ~/.bashrc
+
+# Install Composer.
+RUN curl -s http://getcomposer.org/installer | php \
+    && mv composer.phar /usr/local/bin/composer
+
+# Load xdebug Zend extension with phpunit command.
+RUN echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/nuswhispers/vendor/bin/phpunit'" >> ~/.bashrc
+
+# Install nvm (Node Version Manager).
+RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.2/install.sh | bash
+
+ENV NVM_DIR=/root/.nvm
+
+# Install stable node.
+RUN . ~/.nvm/nvm.sh \
+    && nvm install stable \
+    && nvm use stable \
+    && nvm alias stable \
+    && npm install -g gulp bower
+
+# Source the bash.
+RUN . ~/.bashrc
+
+# Clean up.
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+WORKDIR /var/www/nuswhispers
+
+# Install Prestissimo.
+RUN composer global require "hirak/prestissimo:^0.3";

@@ -1,0 +1,66 @@
+version: '2'
+
+services:
+# == nginx Container ==
+  nginx:
+    build: ./nginx
+    volumes_from:
+      - volumes_application
+    volumes:
+      - ./logs/nginx/:/var/log/nginx
+    ports:
+      - "8080:80"
+    links:
+      - hhvm
+
+# == hhvm Container ==
+  hhvm:
+    build: ./hhvm
+    volumes_from:
+      - volumes_application
+    expose:
+      - "9000"
+    links:
+      - mariadb
+      - redis
+
+# == MariaDB Container ==
+  mariadb:
+    build: ./mariadb
+    volumes_from:
+      - volumes_data
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: homestead
+      MYSQL_USER: homestead
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+
+# == Redis Container ==
+  redis:
+    build: ./redis
+    volumes_from:
+      - volumes_data
+    ports:
+      - "6379:6379"
+
+# == Workspace Container ==
+  workspace:
+    build: ./workspace
+    volumes_from:
+      - volumes_application
+    tty: true
+
+# == Application Code Container ==
+  volumes_application:
+    build: ./volumes/application
+    volumes:
+      - ../nuswhispers:/var/www/nuswhispers
+
+# == Databases Data Container ==
+  volumes_data:
+    build: ./volumes/data
+    volumes:
+      - ./.data/mariadb:/var/lib/mariadb
+      - ./.data/redis:/data
