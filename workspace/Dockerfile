@@ -33,6 +33,7 @@ RUN apt-get update && apt-get install -y \
     php7.0-xdebug \
     php7.0-intl \
     php-dev \
+    python \
     ruby \
     ruby-dev \
     libcurl4-openssl-dev \
