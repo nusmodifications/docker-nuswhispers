@@ -11,18 +11,17 @@ services:
     ports:
       - "8080:80"
     links:
-      - hhvm
+      - php-fpm
 
-# == hhvm Container ==
-  hhvm:
-    build: ./hhvm
+# == php-fpm Container ==
+  php-fpm:
+    build: ./php-fpm
     volumes_from:
       - volumes_application
     expose:
       - "9000"
     links:
-      - mariadb
-      - redis
+      - workspace
 
 # == MariaDB Container ==
   mariadb:
