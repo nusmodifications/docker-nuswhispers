@@ -21,7 +21,8 @@ services:
     expose:
       - "9000"
     links:
-      - workspace
+      - mariadb
+      - redis
 
 # == MariaDB Container ==
   mariadb:
@@ -50,6 +51,8 @@ services:
     volumes_from:
       - volumes_application
     tty: true
+    links:
+      - nginx
 
 # == Application Code Container ==
   volumes_application:
