@@ -63,10 +63,25 @@ RUN curl -s http://getcomposer.org/installer | php \
 # Load xdebug Zend extension with phpunit command.
 RUN echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/nuswhispers/vendor/bin/phpunit'" >> ~/.bashrc
 
+# Copy XDebug INI for remote debugging.
+COPY xdebug.ini /etc/php/7.0/cli/conf.d/xdebug.ini
+
 # Install nvm (Node Version Manager).
 RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.2/install.sh | bash
 
 ENV NVM_DIR=/root/.nvm
+
+# Install (insecure) SSH for remote debugging.
+ADD insecure_id_rsa /tmp/id_rsa
+ADD insecure_id_rsa.pub /tmp/id_rsa.pub
+
+RUN rm -f /etc/service/sshd/down \
+    && cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys \
+        && cat /tmp/id_rsa.pub >> /root/.ssh/id_rsa.pub \
+        && cat /tmp/id_rsa >> /root/.ssh/id_rsa \
+        && rm -f /tmp/id_rsa* \
+        && chmod 644 /root/.ssh/authorized_keys /root/.ssh/id_rsa.pub \
+    && chmod 400 /root/.ssh/id_rsa
 
 # Install stable node.
 RUN . ~/.nvm/nvm.sh \

@@ -50,6 +50,8 @@ services:
     build: ./workspace
     volumes_from:
       - volumes_application
+    ports:
+      - "2222:22"
     tty: true
     links:
       - nginx
