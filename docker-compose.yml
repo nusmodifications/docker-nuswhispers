@@ -27,8 +27,8 @@ services:
 # == MariaDB Container ==
   mariadb:
     build: ./mariadb
-    volumes_from:
-      - volumes_data
+    volumes:
+      - mariadb:/var/lib/mariadb
     ports:
       - "3306:3306"
     environment:
@@ -40,8 +40,8 @@ services:
 # == Redis Container ==
   redis:
     build: ./redis
-    volumes_from:
-      - volumes_data
+    volumes:
+      - redis:/data
     ports:
       - "6379:6379"
 
@@ -62,9 +62,8 @@ services:
     volumes:
       - ../nuswhispers:/var/www/nuswhispers
 
-# == Databases Data Container ==
-  volumes_data:
-    build: ./volumes/data
-    volumes:
-      - ./.data/mariadb:/var/lib/mariadb
-      - ./.data/redis:/data
+volumes:
+  mariadb:
+    driver: "local"
+  redis:
+    driver: "local"
