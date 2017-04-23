@@ -1,9 +1,7 @@
-FROM laradock/php-fpm:7.0--1.2
+FROM laradock/php-fpm:1.4-71
 
 ADD ./laravel.ini /usr/local/etc/php/conf.d
 ADD ./laravel.pool.conf /usr/local/etc/php-fpm.d/
-
-RUN rm -r /var/lib/apt/lists/*
 
 RUN usermod -u 1000 www-data
 

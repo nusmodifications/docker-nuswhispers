@@ -1,5 +1,4 @@
-# Adapted from https://github.com/LaraDock/laradock/blob/master/workspace/Dockerfile.
-FROM phusion/baseimage:latest
+FROM laradock/workspace:1.8-71
 
 RUN DEBIAN_FRONTEND=noninteractive
 RUN locale-gen en_US.UTF-8
@@ -10,29 +9,10 @@ ENV LC_CTYPE=UTF-8
 ENV LANG=en_US.UTF-8
 ENV TERM xterm
 
-# Install "software-properties-common" (for the "add-apt-repository").
+#####################################
+# Other Software
+#####################################
 RUN apt-get update && apt-get install -y \
-    software-properties-common
-
-# Add PHP7 ppa.
-RUN add-apt-repository -y \
-    ppa:ondrej/php
-
-# Install PHP-CLI, some PHP extensions and some useful tools with apt-get.
-RUN apt-get update && apt-get install -y \
-    php7.0-cli \
-    php7.0-common \
-    php7.0-curl \
-    php7.0-json \
-    php7.0-xml \
-    php7.0-mbstring \
-    php7.0-mcrypt \
-    php7.0-mysql \
-    php7.0-zip \
-    php7.0-gd \
-    php7.0-xdebug \
-    php7.0-intl \
-    php-dev \
     python \
     ruby \
     ruby-dev \
@@ -47,56 +27,113 @@ RUN apt-get update && apt-get install -y \
 # Install Compass GEM for SASS compilation.
 RUN gem install compass
 
-# Clean up, to free some space
-RUN apt-get clean
+#####################################
+# Non-Root User
+#####################################
+ARG PGID=1000
+ARG PUID=1000
 
-# Remove load xdebug extension (only load on phpunit command)
-RUN sed -i 's/^/;/g' /etc/php/7.0/cli/conf.d/20-xdebug.ini
+RUN groupadd -g $PGID nuswhispers && \
+    useradd -u $PUID -g nuswhispers -m nuswhispers
 
-# Add bin folder of composer to PATH.
-RUN echo "export PATH=${PATH}:/var/www/nuswhispers/vendor/bin" >> ~/.bashrc
+#####################################
+# Timezone
+#####################################
+ARG TZ=UTC
+ENV TZ=${TZ}
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-# Install Composer.
-RUN curl -s http://getcomposer.org/installer | php \
-    && mv composer.phar /usr/local/bin/composer
+#####################################
+# Composer
+#####################################
+COPY composer.json /home/nuswhispers/.composer/composer.json
 
-# Load xdebug Zend extension with phpunit command.
-RUN echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/nuswhispers/vendor/bin/phpunit'" >> ~/.bashrc
+RUN chown -R nuswhispers:nuswhispers /home/nuswhispers/.composer
+USER nuswhispers
 
-# Copy XDebug INI for remote debugging.
-COPY xdebug.ini /etc/php/7.0/cli/conf.d/xdebug.ini
+RUN composer global install
 
-# Install nvm (Node Version Manager).
-RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.2/install.sh | bash
+# Export bin folders to PATH.
+RUN echo "" >> ~/.bashrc && \
+    echo "export PATH=${PATH}:/var/www/nuswhispers/vendor/bin" >> ~/.bashrc
 
-ENV NVM_DIR=/root/.nvm
+#####################################
+# xDebug
+#####################################
+USER root
 
-# Install (insecure) SSH for remote debugging.
+RUN apt-get update && \
+    apt-get install -y --force-yes php7.1-xdebug && \
+    sed -i 's/^/;/g' /etc/php/7.1/cli/conf.d/20-xdebug.ini && \
+    echo "" >> ~/.bashrc && \
+    echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/nuswhispers/vendor/bin/phpunit'" >> ~/.bashrc
+
+COPY xdebug.ini /etc/php/7.1/cli/conf.d/xdebug.ini
+
+#####################################
+# SSH
+#####################################
 ADD insecure_id_rsa /tmp/id_rsa
 ADD insecure_id_rsa.pub /tmp/id_rsa.pub
 
 RUN rm -f /etc/service/sshd/down \
     && cat /tmp/id_rsa.pub >> /root/.ssh/authorized_keys \
-        && cat /tmp/id_rsa.pub >> /root/.ssh/id_rsa.pub \
-        && cat /tmp/id_rsa >> /root/.ssh/id_rsa \
-        && rm -f /tmp/id_rsa* \
-        && chmod 644 /root/.ssh/authorized_keys /root/.ssh/id_rsa.pub \
+    && cat /tmp/id_rsa.pub >> /root/.ssh/id_rsa.pub \
+    && cat /tmp/id_rsa >> /root/.ssh/id_rsa \
+    && rm -f /tmp/id_rsa* \
+    && chmod 644 /root/.ssh/authorized_keys /root/.ssh/id_rsa.pub \
     && chmod 400 /root/.ssh/id_rsa
 
-# Install stable node.
-RUN . ~/.nvm/nvm.sh \
-    && nvm install stable \
-    && nvm use stable \
-    && nvm alias stable \
-    && npm install -g gulp bower
+#####################################
+# Node (nvm)
+#####################################
+USER nuswhispers
 
-# Source the bash.
-RUN . ~/.bashrc
+ARG NODE_VERSION=stable
+ENV NODE_VERSION ${NODE_VERSION}
 
-# Clean up.
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+ENV NVM_DIR=/home/nuswhispers/.nvm
+RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.6/install.sh | bash && \
+    . $NVM_DIR/nvm.sh && \
+    nvm install ${NODE_VERSION} && \
+    nvm use ${NODE_VERSION} && \
+    nvm alias ${NODE_VERSION} && \
+    npm install -g gulp bower
+
+# Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
+RUN echo "" >> ~/.bashrc && \
+    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc
+
+USER root
+
+RUN echo "" >> ~/.bashrc && \
+    echo 'export NVM_DIR="/home/nuswhispers/.nvm"' >> ~/.bashrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc
+
+#####################################
+# Yarn
+#####################################
+USER nuswhispers
+
+RUN [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
+    curl -o- -L https://yarnpkg.com/install.sh | bash && \
+    echo "" >> ~/.bashrc && \
+    echo 'export PATH="$HOME/.yarn/bin:$PATH"' >> ~/.bashrc
+
+USER root
+
+RUN echo "" >> ~/.bashrc && \
+    echo 'export YARN_DIR="/home/nuswhispers/.yarn"' >> ~/.bashrc && \
+    echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc
+
+#####################################
+# Final Touches
+#####################################
+
+# Clean up
+USER root
+RUN apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 WORKDIR /var/www/nuswhispers
-
-# Install Prestissimo.
-RUN composer global require "hirak/prestissimo:^0.3";
