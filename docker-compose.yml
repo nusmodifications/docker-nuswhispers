@@ -29,7 +29,7 @@ services:
   nginx:
     build: ./nginx
     volumes:
-      - ./logs/nginx/:/var/log/nginx
+      - ./logs/nginx:/var/log/nginx
       - ../nuswhispers:/var/www/nuswhispers
     ports:
       - "8085:80"
