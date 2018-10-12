@@ -1,4 +1,4 @@
-FROM laradock/php-fpm:1.4-71
+FROM laradock/php-fpm:2.2-7.2
 
 ADD ./laravel.ini /usr/local/etc/php/conf.d
 ADD ./laravel.pool.conf /usr/local/etc/php-fpm.d/

@@ -1,4 +1,4 @@
-FROM laradock/workspace:1.8-71
+FROM laradock/workspace:2.2-7.2
 
 RUN DEBIAN_FRONTEND=noninteractive
 RUN locale-gen en_US.UTF-8
@@ -46,12 +46,10 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 #####################################
 # Composer
 #####################################
-COPY composer.json /home/nuswhispers/.composer/composer.json
+RUN mkdir /home/nuswhispers/.composer && \
+    chown -R nuswhispers:nuswhispers /home/nuswhispers/.composer
 
-RUN chown -R nuswhispers:nuswhispers /home/nuswhispers/.composer
 USER nuswhispers
-
-RUN composer global install
 
 # Export bin folders to PATH.
 RUN echo "" >> ~/.bashrc && \
@@ -63,12 +61,11 @@ RUN echo "" >> ~/.bashrc && \
 USER root
 
 RUN apt-get update && \
-    apt-get install -y --force-yes php7.1-xdebug && \
-    sed -i 's/^/;/g' /etc/php/7.1/cli/conf.d/20-xdebug.ini && \
-    echo "" >> ~/.bashrc && \
-    echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/nuswhispers/vendor/bin/phpunit'" >> ~/.bashrc
+    apt-get install -y php7.2-xdebug && \
+    sed -i 's/^;//g' /etc/php/7.2/cli/conf.d/20-xdebug.ini && \
+    echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/vendor/bin/phpunit'" >> ~/.bashrc
 
-COPY xdebug.ini /etc/php/7.1/cli/conf.d/xdebug.ini
+COPY xdebug.ini /etc/php/7.2/cli/conf.d/xdebug.ini
 
 #####################################
 # SSH
@@ -111,21 +108,6 @@ RUN echo "" >> ~/.bashrc && \
     echo 'export NVM_DIR="/home/nuswhispers/.nvm"' >> ~/.bashrc && \
     echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc
 
-#####################################
-# Yarn
-#####################################
-USER nuswhispers
-
-RUN [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
-    curl -o- -L https://yarnpkg.com/install.sh | bash && \
-    echo "" >> ~/.bashrc && \
-    echo 'export PATH="$HOME/.yarn/bin:$PATH"' >> ~/.bashrc
-
-USER root
-
-RUN echo "" >> ~/.bashrc && \
-    echo 'export YARN_DIR="/home/nuswhispers/.yarn"' >> ~/.bashrc && \
-    echo 'export PATH="$YARN_DIR/bin:$PATH"' >> ~/.bashrc
 
 #####################################
 # Final Touches
