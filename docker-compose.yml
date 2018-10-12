@@ -1,13 +1,36 @@
-version: '2'
+version: '3'
+
+volumes:
+  mariadb:
+    driver: "local"
+  redis:
+    driver: "local"
 
 services:
+# == Workspace Container ==
+  workspace:
+    build:
+      context: ./workspace
+      args:
+        - NODE_VERSION=stable
+        - TZ=UTC
+    volumes:
+      - ../nuswhispers:/var/www/nuswhispers
+    expose:
+      - "9001"
+    ports:
+      - "2222:22"
+    tty: true
+    links:
+      - nginx
+    environment:
+      - PHP_IDE_CONFIG=serverName=Docker
 # == nginx Container ==
   nginx:
     build: ./nginx
-    volumes_from:
-      - volumes_application
     volumes:
       - ./logs/nginx/:/var/log/nginx
+      - ../nuswhispers:/var/www/nuswhispers
     ports:
       - "8085:80"
     links:
@@ -16,13 +39,16 @@ services:
 # == php-fpm Container ==
   php-fpm:
     build: ./php-fpm
-    volumes_from:
-      - volumes_application
+    volumes:
+      - ../nuswhispers:/var/www/nuswhispers
     expose:
       - "9000"
+      - "9001"
     links:
       - mariadb
       - redis
+    environment:
+      - PHP_IDE_CONFIG=serverName=Docker
 
 # == MariaDB Container ==
   mariadb:
@@ -44,26 +70,3 @@ services:
       - redis:/data
     ports:
       - "6379:6379"
-
-# == Workspace Container ==
-  workspace:
-    build: ./workspace
-    volumes_from:
-      - volumes_application
-    ports:
-      - "2222:22"
-    tty: true
-    links:
-      - nginx
-
-# == Application Code Container ==
-  volumes_application:
-    build: ./volumes/application
-    volumes:
-      - ../nuswhispers:/var/www/nuswhispers
-
-volumes:
-  mariadb:
-    driver: "local"
-  redis:
-    driver: "local"
