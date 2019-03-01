@@ -1,4 +1,4 @@
-FROM laradock/php-fpm:2.2-7.2
+FROM letsdockerize/laradock-php-fpm:2.3-7.3
 
 ADD ./laravel.ini /usr/local/etc/php/conf.d
 ADD ./laravel.pool.conf /usr/local/etc/php-fpm.d/
