@@ -15,7 +15,7 @@ services:
         - NODE_VERSION=stable
         - TZ=UTC
     volumes:
-      - ../nuswhispers:/var/www/nuswhispers
+      - ../nuswhispers:/var/www/nuswhispers:delegated
     expose:
       - "9001"
     ports:
@@ -54,7 +54,7 @@ services:
   mariadb:
     build: ./mariadb
     volumes:
-      - mariadb:/var/lib/mariadb
+      - mariadb:/var/lib/mysql
     ports:
       - "3306:3306"
     environment:
