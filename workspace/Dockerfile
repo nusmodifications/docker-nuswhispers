@@ -1,4 +1,4 @@
-FROM letsdockerize/laradock-workspace:2.3-7.3
+FROM laradock/workspace:2.6.1-7.4
 
 RUN DEBIAN_FRONTEND=noninteractive
 RUN locale-gen en_US.UTF-8
@@ -62,10 +62,10 @@ USER root
 
 RUN apt-get update && \
     apt-get install -y php-xdebug && \
-    sed -i 's/^;//g' /etc/php/7.3/cli/conf.d/20-xdebug.ini && \
+    sed -i 's/^;//g' /etc/php/7.4/cli/conf.d/20-xdebug.ini && \
     echo "alias phpunit='php -dzend_extension=xdebug.so /var/www/vendor/bin/phpunit'" >> ~/.bashrc
 
-COPY xdebug.ini /etc/php/7.3/cli/conf.d/xdebug.ini
+COPY xdebug.ini /etc/php/7.4/cli/conf.d/xdebug.ini
 
 #####################################
 # SSH
@@ -90,12 +90,11 @@ ARG NODE_VERSION=stable
 ENV NODE_VERSION ${NODE_VERSION}
 
 ENV NVM_DIR=/home/nuswhispers/.nvm
-RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash && \
+RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.35.1/install.sh | bash && \
     . $NVM_DIR/nvm.sh && \
     nvm install ${NODE_VERSION} && \
     nvm use ${NODE_VERSION} && \
-    nvm alias ${NODE_VERSION} && \
-    npm install -g gulp bower
+    nvm alias ${NODE_VERSION}
 
 # Source NVM when loading bash since ~/.profile isn't loaded on non-login shell
 RUN echo "" >> ~/.bashrc && \
