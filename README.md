@@ -1,13 +1,13 @@
 # Docker Images for NUSWhispers
 
-> Run NUSWhispers web stack using (Native) Docker.
+> Run NUSWhispers web stack using Docker.
 
 ## Containers
 - nginx
-- hhvm
+- php-fpm
 - MariaDB
 - Redis
-- Workspace (for running `composer`, `bower`, `npm`, and `gulp` operations)
+- Workspace (for running `composer`, `npm` operations)
 - Data (for databases' persistence)
 - Application (mapped to NUSWhispers source code)
 
@@ -17,7 +17,7 @@
 ## Setup
 Assuming your work directory is `~/Projects/`:
 
-1) Checkout NUSWhispers source code (this assumes `remove-vagrant` branch is merged into master):
+1) Checkout NUSWhispers source code:
 ```
 cd ~/Projects
 git clone https://github.com/nusmodifications/nuswhispers.git
@@ -51,12 +51,6 @@ docker-compose down
 ```
 docker exec -it {workspace-container-name} bash
 ```
-
-_TODO_
-
-## Known Issues
-
-_TODO_
 
 ## Credits
 - [Laradock](https://github.com/LaraDock/)
